@@ -1,0 +1,114 @@
+Parte 1. Comandos 
+npm install -g @nestjs/cli  /   nest new back-end   /   npm install @nestjs/typeorm typeorm pg
+npm install @nestjs/config  /   npm install @nestjs/mapped-types    /   npm install class-validator class-transformer
+nest generate module ...    /   nest generate service ...   /   nest generate controller ...
+npm install @nestjs/typeorm typeorm pg @nestjs/config @nestjs/mapped-types class-validator class-transformer
+
+Parte 2.
+Configurar TypeOrm. utilizando .env
+back-end > .env
+└ DATABASE_HOST · DATABASE_PORT · DATABASE_USER · DATABASE_PASSWORD · DATABASE_NAME
+
+src > app.module.ts
+└ imports: [ ConfigModule.forRoot({ isGlobal: true, }), TypeOrmModule.forRootAsync({
+    imports: [ConfigModule], inject: [ConfigService],
+    useFactory: (configService: ConfigService) => ({
+        type: 'postgres', host: configService.get<string>('DATABASE_HOST'),
+        port: configService.get<number>('DATABASE_PORT')... ,
+        autoLoadEntities: true, synchronize: true,
+    }),
+}), MoviesModule, CategoriesModule,0
+],
+
+Parte 3. 
+Crear las entidades
+nest generate [mod,ser,con] peliculas · categorias
+└ peliculas > entity > pelicula.entity.ts
+    └ @Entity() export class Movie {
+        @PrimaryGeneratedColumn() id: number;
+        @Column() title: string;
+        @Column() description: string;
+        @ManyToMany(() => Category, (category) => category.movies)
+        @JoinTable() categories: Category[];
+    }
+└ categorias > entity > categoria.entity.ts
+    └ @Entity() export class Category {
+        @PrimaryGeneratedColumn() id: number;
+        @Column({ unique: true }) nombre: string;
+        @ManyToMany(() => Movie, (movie) => movie.categories) movies: Movie[];
+    }
+
+Parte 4.
+Crear dtos
+└ peliculas > dto > create-pelicula.dto.ts
+    └ export class CreateMovieDto {
+        @IsString() @IsNotEmpty() title: string;
+        @IsString() @IsNotEmpty() description: string;
+        @IsArray() @ArrayNotEmpty() @IsInt({ unique: true }) @Type(() => Number)
+        categoryIds: number[];
+    }
+└ categorias > dto > create-category.dto.ts
+    └ export class CreateCategoryDto {
+        @IsString() @IsNotEmpty() name: string;
+    }
+
+Parte 5. 
+Configurar Modules, Services y Controllers
+└ peliculas > pelicula.service.ts
+    └ constructor (
+        @InjectRepository(Movie) private readonly movieRep: Repository<Movie>;
+        @InjectRepository(Category) private readonly catRep: Repository<Category>;
+    ) {}
+
+    async create (createMovieDto: CreateMovieDto): Promise<Movie> {
+        const { title, description, categoryIds} = createMovieDto;
+        const categories = await this.catRep.find({
+            where: {id: In(categoryIds)},
+            const movie = this.movieRep.create({ title, description, categories});
+            return this.movieRepository.save(movie);
+        })
+    }
+
+    async findAll(): Promise<Movie[]> {
+        return this.movieRep.find({ relations: ['categories] });
+    }
+
+    async findOne(id: number): Promise<Movie | null> {
+        return this.movieRep.findOne({where: {id}, relations: ['categories']});
+    }
+
+    async delete(id: number): Promise<void> {
+        await this.movieRep.delete(id);
+    }
+└ peliculas > pelicula.controller.ts
+    └ constructor(private readonly moviesService: MoviesService) {}
+    @Post() create(@Body() createMovieDto: CreateMovieDto) {
+        return this.moviesService.create(createMovieDto);
+    }
+
+    @Get() findAll() {return this.moviesService.findAll();}
+
+    @Get(':id') findOne(@Param('id') id: string) { 
+        return this.moviesService.findOne(Number(id));
+    }
+
+    @Delete(':id') delete(@Param('id') id: string) {
+        return this.moviesService.delete(Number(id));
+    }
+└ peliculas > peliculas.module.ts
+    └ imports: [TypeOrmModule.forFeature([Movie, Category])],
+    ...
+    exports: [MovieService],
+
+└ categorias > category.service.ts
+    └ constructor(@InjectRepository(Category)
+      private readonly categoryRepository: Repository<Category>, ) {}
+
+      async create (CreateCategoryDto: CreateCategoryDto ): Promise<Category> {
+        const category = this.categoryRepository.create(CreateCategoryDto);
+        return this.categoryRepository.save(category);
+      }
+
+      findAll(), findOne() y delete() iguales pero sin 'relations'
+└ categories > category.controller.ts --> igual que movies
+└ categories > category.module.ts --> igual que movies

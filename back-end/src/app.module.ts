@@ -10,11 +10,7 @@ import { MoviesModule } from './movies/movies.module';
 import { CategoriesModule } from './categories/categories.module';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-    TypeOrmModule.forRootAsync({
+  imports: [ ConfigModule.forRoot({ isGlobal: true, }),  TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({

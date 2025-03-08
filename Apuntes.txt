@@ -1,3 +1,12 @@
+Comandos: 
+    1 - npm install -g @nestjs/cli
+    2 - nest new back-end (cd back-end)
+    3 - npm install @nestjs/typeorm typeorm pg
+    4 - npm install @nestjs/config
+    5 - npm install @nestjs/mapped-types
+    6 - npm install class-validator class-transformer
+    7 - nest generate [module, service, controller] ...
+
 1 - Instalar NestJS CLI
     └ npm install -g @nestjs/cli
 
@@ -114,3 +123,30 @@
     └ @Get findAll
     └ @Get :id findOne
     └ @Delete :id delete
+
+12 - Usar DTOs
+    └ npm install @nestjs/mapped-types
+    └ npm install class-validator class-transformer
+    └ actualizar main.ts
+        └ app.useGlobalPipes(new validationPipe());
+    └ src > users > dto
+        └ create-user.dto.ts
+            └ export class CreateUserDto {
+                @IsString()
+                @IsOptional()
+                name?: string;
+
+                @IsEmail()
+                @IsOptional()
+                email?: string;
+            }
+    └ actualizar user.service
+        └ async create (createUserDto: CreateUserDto): Promise<User> {
+            const user = this.userRepository.create(createUserDto);
+            return this.userRepository.save(user);
+        }
+    └ actualizar user.controller
+        └ @Post()
+          create(@Body() createUserDto: CreateUserDto) {
+            return this.usersService.create(CreateUserDto);
+          }
